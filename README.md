@@ -1,8 +1,32 @@
 # Neural-Network-Playground
 
 # Question 1
-The streamlit app is deployed at https://neural-network-playground-arf8r3sule3ohwtbiydgxe.streamlit.app/
+This is a Streamlit app that allows users to interactively explore and visualize the decision boundaries learned by a neural network on different types of datasets. The app provides various features and functionalities, making it easy for users to experiment with different dataset types, basis functions, and neural network architectures. It is deployed at https://neural-network-playground-arf8r3sule3ohwtbiydgxe.streamlit.app/
 
+## Features
+
+1. **Dataset Selection:**
+   - Users can choose from three different types of datasets: 'circle', 'spiral', and 'exclusive_or'.
+   - 'circle': Generates a circular dataset with points inside and outside the unit circle.
+   - 'spiral': Generates two spirals, allowing the neural network to learn a more complex decision boundary.
+   - 'exclusive_or': Generates a dataset with points in the four quadrants, and the neural network learns the XOR operation on the input features.
+
+3. **Basis Functions:**
+   - Users can optionally include basis functions to transform the input features of the dataset.
+   - Available basis functions include 'X1', 'X2', 'X1^2', 'X2^2', 'X1X2', 'sin(X1)', 'sin(X2)', 'gaussian X1', and 'gaussian X2'.
+   - The app will stop when the user doesn't select any of the basis functions. At least one needs to be selected.
+
+4. **Neural Network Architecture:**
+   - Users can specify the number of hidden layers and the number of neurons in each hidden layer.
+
+5. **Training and Visualization:**
+   - The app trains the neural network on the generated dataset using the specified architecture and hyperparameters.
+   - It visualizes the decision boundaries learned by the neural network using contour plots.
+   - The contour plots show the probabilities of the positive class (label=1) across the input feature space, helping users understand how the neural network classifies different regions.
+
+6. **Monte Carlo Dropout (MC Dropout):**
+   - Users can apply Monte Carlo Dropout to capture model uncertainty.
+   - The app visualizes decision boundaries and uncertainties using additional contour plots with MC Dropout.
 
 # Question 2
 For the task, I have created a CNN having two convolution and two pooling layers. This is follwed by a MLP. At the end there is a softmax to get the probabilites of the 10 classes.

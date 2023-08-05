@@ -3,9 +3,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import tensorflow as tf
 from sklearn.model_selection import train_test_split
-# function to generate toy datasets 
 import numpy as np
+np.random.seed(42)
 
+# function to generate toy datasets
 def generate_dataset(dataset_type='circle'):
     if dataset_type == 'circle':
         X = np.random.randn(200, 2)
@@ -32,21 +33,36 @@ def generate_dataset(dataset_type='circle'):
     return X, y
 
     
-# function to Set the basis
-def apply_basis(X,include_basis = False ,basis_type = "sine"):
-    if include_basis:
-        if basis_type == 'sine':
-            X_basis = np.hstack([X, np.sin(X)])
-        elif basis_type == 'gaussian':
-            X_basis = np.hstack([X, np.exp(-np.sum(X ** 2, axis=1) / 0.1).reshape(X.shape[0], 1)])
-            print(X_basis)
-        elif basis_type == 'polynomial':
-            X_basis = np.hstack([X, X ** 2])
-            # print("size of the x_basis ", X_basis.shape, basis_type)
-            # print("Number of  inputs", X_basis.shape[1])
-        return X_basis
-    return X
+# function to handle the different basis function
+def apply_basis(X, include_basis=False, basis_type=["X1", "X2"]):
+    X1 = X[:, 0]
+    X2 = X[:, 1]
     
+    if include_basis:
+        basis_functions = []
+        if "X1" in basis_type:
+            basis_functions.append(X1)
+        if "X2" in basis_type:
+            basis_functions.append(X2)
+        if "X1^2" in basis_type:
+            basis_functions.append(X1**2)
+        if "X2^2" in basis_type:
+            basis_functions.append(X2**2)
+        if "X1X2" in basis_type:
+            basis_functions.append(X1 * X2)
+        if "sin(X1)" in basis_type:
+            basis_functions.append(np.sin(X1))
+        if "sin(X2)" in basis_type:
+            basis_functions.append(np.sin(X2))
+        if "gaussian X1" in basis_type:
+            basis_functions.append(np.exp(-0.5 * (X1 - np.mean(X1))**2))
+        if "gaussian X2" in basis_type:
+            basis_functions.append(np.exp(-0.5 * (X2 - np.mean(X2))**2))
+        
+        X = np.column_stack(basis_functions)
+        
+    return X
+
 
 # network creation
 def create_model(num_features, num_hidden_layers, neurons_each_layer, learning_rate, dropout_rate):
@@ -71,11 +87,17 @@ def main():
         dataset_type = st.selectbox("Select Dataset", ['circle', 'spiral', 'exclusive_or'])
         include_basis = st.checkbox("Include Basis Functions", value=False)
         if include_basis:
-            basis_type = st.selectbox("Select Basis Function", ['sine', 'gaussian', 'polynomial'])
+            basis_type = st.multiselect(
+                'Select the inputs',
+                ['X1', 'X2', 'X1^2', 'X2^2', 'X1X2', 'sin(X1)', 'sin(X2)', 'gaussian X1', 'gaussian X2'],
+                ['X1', 'X2'])
+            if(basis_type == []):
+                st.warning('Cannot leave this empty', icon="⚠️")
+                st.stop()
         else:
-            basis_type = None
+            basis_type = ["X1", "X2"]
         learning_rate = st.slider("Learning Rate", min_value=0.001, max_value=0.1, value=0.01, step=0.001)
-        epochs = st.slider("Number of Epochs", min_value=10, max_value=100, value=50, step=10)
+        epochs = st.slider("Number of Epochs", min_value=10, max_value=1000, value=50, step=10)
         dropout_rate = st.slider("Dropout Rate", min_value=0.0, max_value=0.5, value=0.1, step=0.01)
         include_MC_dropout = st.checkbox("Apply Monte Carlo Dropout", value=False)
         
@@ -85,7 +107,8 @@ def main():
         if(num_hidden_layers >=1):
             for i in range(num_hidden_layers):
                 s = f"Layer {i+1}"
-                neurons_each_layer[i] =  st.slider(s, min_value=1, max_value=10, value = 3, step=1)
+                neurons_each_layer[i] =  st.number_input(s, min_value=1, max_value=10, value = 3, step=1)
+    
     
     # # dataset generation
     # X, y = generate_dataset(dataset_type)
@@ -107,18 +130,15 @@ def main():
     history = model.fit(X_train, y_train, epochs=epochs, verbose=0)
     
     y_pred = model.predict(X_test) # y_pred is in probabilities
-    # Calculate accuracy
+    # Calculating accuracy
     y_pred_binary = (y_pred > 0.5).astype(int)
     accuracy = np.mean(y_pred_binary == y_test)
-    print("Accuracy :", accuracy)
-    st.write(f"Accuracy: {accuracy}")
+    # st.write(f"Accuracy: {accuracy}")
     
     # plotting
     xx, yy = np.meshgrid(np.linspace(-4, 4, 100), np.linspace(-4, 4, 100))
     grid_points = np.c_[xx.ravel(), yy.ravel()]
     grid_points = apply_basis(grid_points, include_basis, basis_type)
-    
-    # print("values ")
     probabilities = model.predict(grid_points).reshape(xx.shape)
     
     fig, ax = plt.subplots()
@@ -135,17 +155,14 @@ def main():
         y_pred_mc_mean = y_pred_mc.mean(axis=0)
         y_pred_binary_mc = (y_pred_mc_mean > 0.5).astype(int)
         accuracy_mc = np.mean(y_pred_binary_mc == y_test)
-        print("Accuracy MC:", accuracy_mc)
-        
-        
-        
+
         y_prob_mc = np.stack([model(grid_points,training=True)
                     for sample in range(100)])
         y_prob_mc_mean = y_prob_mc.mean(axis=0).reshape(xx.shape)
         y_prob_mc_std = y_prob_mc.std(axis=0).reshape(xx.shape)
         
         st.header("With Monte Carlo Dropout")
-        st.write(f"Accuracy: {accuracy_mc}")
+        # st.write(f"Accuracy: {accuracy_mc}")
         fig1, ax = plt.subplots()
         contour = ax.contourf(xx, yy, y_prob_mc_mean, levels=20, cmap='RdYlBu', alpha=0.6)
         cbar = plt.colorbar(contour)
